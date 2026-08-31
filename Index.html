@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Gadaa Roots – Waiting List for Terminated Creators</title>
+  <meta name="description" content="Creators lost platforms. We're building forests instead. Earn points, plant real trees, own your impact.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { background: radial-gradient(circle at 10% 20%, #0a2f1f, #031006); font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+    .glass-card { background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(202, 163, 59, 0.4); border-radius: 2rem; }
+    .btn-gold { background: linear-gradient(135deg, #caa33b, #a07e2c); transition: transform 0.1s ease; }
+    .btn-gold:hover { transform: scale(1.02); }
+    .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.9); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .modal-card { background: #1a2a1f; border-radius: 2rem; max-width: 90%; width: 400px; padding: 1.5rem; border: 1px solid #caa33b; }
+    .sprout { width: 80px; height: 80px; background: #2e7d32; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 3rem; cursor: pointer; transition: transform 0.1s ease; box-shadow: 0 0 10px #caa33b; }
+    .sprout:active { transform: scale(0.95); }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #1a2f1f; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: #caa33b; border-radius: 10px; }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="text-white">
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+  const firebaseConfig = {
+    apiKey: "AIzaSyD0lDiEt0NlechKrV42Fn_-tth4xpwAJQ0",
+    authDomain: "gadaa-eco-builder-web.firebaseapp.com",
+    projectId: "gadaa-eco-builder-web",
+    storageBucket: "gadaa-eco-builder-web.firebasestorage.app",
+    messagingSenderId: "276496769348",
+    appId: "1:276496769348:web:a4942a48a4c192224d7711"
+  };
+  const app = firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  const getRank = (points) => {
+    if (points >= 10000) return { name: "Yuuba (Elder)", weight: "15x", desc: "Wisdom keeper, final authority." };
+    if (points >= 5000) return { name: "Gadaa (Ruler)", weight: "10x", desc: "8‑year leader, sets policies." };
+    if (points >= 2000) return { name: "Raaba (Mentor)", weight: "8x", desc: "Teaches younger grades." };
+    if (points >= 1000) return { name: "Kuusa (Leader)", weight: "5x", desc: "Senior warrior, manages projects." };
+    if (points >= 500) return { name: "Qondaala (Guardian)", weight: "3x", desc: "Defender, protects the land." };
+    if (points >= 200) return { name: "Follee (Supporter)", weight: "2x", desc: "Active youth, plants trees." };
+    return { name: "Dabballee (Learner)", weight: "1x", desc: "Child stage, learning the ways." };
+  };
+
+  const biologicalStages = [
+    { name: "Dabballee", ageMin: 0, ageMax: 8, vote: "1x", desc: "Childhood – no voting rights, but protected and taught." },
+    { name: "Follee", ageMin: 9, ageMax: 16, vote: "2x", desc: "Youth – early responsibilities, can participate in planting." },
+    { name: "Qondaala", ageMin: 17, ageMax: 24, vote: "3x", desc: "Warrior – defends the community, leads restoration work." },
+    { name: "Kuusa", ageMin: 25, ageMax: 32, vote: "5x", desc: "Senior warrior – organises group efforts." },
+    { name: "Raaba", ageMin: 33, ageMax: 40, vote: "8x", desc: "Mentor – teaches Gadaa law, resolves disputes." },
+    { name: "Gadaa", ageMin: 41, ageMax: 48, vote: "10x", desc: "Ruling class – holds executive power for 8 years." },
+    { name: "Yuuba", ageMin: 49, ageMax: 120, vote: "15x", desc: "Elder – final council, advises and can veto decisions." }
+  ];
+
+  const escapeHtml = (s) => s?.replace(/[&<>]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[m])) || "";
+
+  const CommentItem = ({ comment, replies, userId, onEdit, onDelete, onReply }) => {
+    const [replyVisible, setReplyVisible] = React.useState(false);
+    const [replyName, setReplyName] = React.useState("");
+    const [replyText, setReplyText] = React.useState("");
+    const [editMode, setEditMode] = React.useState(false);
+    const [editText, setEditText] = React.useState(comment.text);
+    const isOwner = userId && comment.userId === userId;
+
+    const handleReply = () => {
+      if (replyText.trim()) onReply(comment.id, replyName || comment.name, replyText);
+      setReplyVisible(false);
+      setReplyName("");
+      setReplyText("");
+    };
+
+    return React.createElement("div", { className: "bg-white/10 rounded-xl p-3 mb-2" },
+      React.createElement("div", { className: "font-bold text-[#caa33b] text-base" }, comment.name),
+      editMode
+        ? React.createElement("div", { className: "mt-1" },
+            React.createElement("textarea", { className: "w-full p-2 rounded bg-black/70 text-white", rows: "2", value: editText, onChange: e => setEditText(e.target.value) }),
+            React.createElement("div", { className: "flex gap-2 mt-1" },
+              React.createElement("button", { className: "text-xs text-[#caa33b]", onClick: () => { onEdit(comment.id, editText); setEditMode(false); } }, "Save"),
+              React.createElement("button", { className: "text-xs text-gray-400", onClick: () => { setEditMode(false); setEditText(comment.text); } }, "Cancel")
+            )
+          )
+        : React.createElement("div", { className: "text-sm mt-1 break-words text-white/90" }, comment.text),
+      React.createElement("div", { className: "flex gap-3 text-xs text-white/60 mt-1 flex-wrap" },
+        React.createElement("span", {}, comment.timestamp?.toDate?.().toLocaleString() || "Just now"),
+        React.createElement("button", { className: "text-[#caa33b]", onClick: () => setReplyVisible(!replyVisible) }, "💬 Reply"),
+        isOwner && !editMode && React.createElement("button", { className: "text-[#caa33b]", onClick: () => setEditMode(true) }, "✏️ Edit"),
+        isOwner && React.createElement("button", { className: "text-red-400", onClick: () => onDelete(comment.id) }, "🗑️ Delete")
+      ),
+      replyVisible && React.createElement("div", { className: "ml-4 mt-2" },
+        React.createElement("input", { type: "text", placeholder: "Your name", className: "w-full p-1 mb-1 rounded bg-black/50 text-white text-sm", value: replyName, onChange: e => setReplyName(e.target.value) }),
+        React.createElement("textarea", { placeholder: "Your reply...", rows: "2", className: "w-full p-1 mb-1 rounded bg-black/50 text-white text-sm", value: replyText, onChange: e => setReplyText(e.target.value) }),
+        React.createElement("button", { className: "text-xs bg-[#caa33b] px-2 py-1 rounded", onClick: handleReply }, "Post Reply")
+      ),
+      replies && replies.length > 0 && React.createElement("div", { className: "ml-4 mt-2 space-y-2" },
+        replies.map(r => React.createElement(CommentItem, { key: r.id, comment: r, replies: [], userId, onEdit, onDelete, onReply }))
+      )
+    );
+  };
+
+  const App = () => {
+    const [user, setUser] = React.useState(null);
+    const [globalStats, setGlobalStats] = React.useState({ totalUsers: 0, totalTrees: 0, queuePosition: 0 });
+    const [comments, setComments] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
+    const [signupName, setSignupName] = React.useState("");
+    const [signupEmail, setSignupEmail] = React.useState("");
+    const [signupMsg, setSignupMsg] = React.useState("");
+    const [newCommentName, setNewCommentName] = React.useState("");
+    const [newCommentText, setNewCommentText] = React.useState("");
+    const [ageInput, setAgeInput] = React.useState("");
+    const [activeStageModal, setActiveStageModal] = React.useState(null);
+    const [celebration, setCelebration] = React.useState(false);
+    const [dailyMsg, setDailyMsg] = React.useState("");
+    const [tapPointsLeft, setTapPointsLeft] = React.useState(0);
+    const [leaderboard, setLeaderboard] = React.useState([]);
+
+    const docRef = (path, ...segments) => db.doc([path, ...segments].join('/'));
+    const colRef = (path) => db.collection(path);
+
+    React.useEffect(() => {
+      const unsubscribe = auth.onAuthStateChanged(async (fbUser) => {
+        if (!fbUser) {
+          try {
+            const cred = await auth.signInAnonymously();
+            await loadUserData(cred.user.uid);
+          } catch (err) { console.error(err); setLoading(false); }
+        } else {
+          await loadUserData(fbUser.uid);
+        }
+      });
+      return () => unsubscribe();
+    }, []);
+
+    const loadUserData = async (uid) => {
+      try {
+        const userSnap = await docRef("users", uid).get();
+        if (userSnap.exists) {
+          const data = userSnap.data();
+          setUser({ uid, ...data });
+          const today = new Date().toDateString();
+          const used = data.tapPointsUsedToday || 0;
+          setTapPointsLeft(Math.max(0, 50 - used));
+        } else {
+          setUser({ uid, name: null, email: null, points: 0, trees: 0, referrals: 0, tapPointsUsedToday: 0, lastTapDate: "", lastCheckinDate: "", checkinStreak: 0 });
+          setTapPointsLeft(50);
+        }
+      } catch (err) { console.error(err); } finally { setLoading(false); }
+    };
+
+    React.useEffect(() => {
+      const unsubscribe = docRef("global", "stats").onSnapshot((docSnap) => {
+        if (docSnap.exists) setGlobalStats(docSnap.data());
+        else setGlobalStats({ totalUsers: 0, totalTrees: 0, queuePosition: 0 });
+      });
+      return unsubscribe;
+    }, []);
+
+    React.useEffect(() => {
+      const unsubscribe = colRef("users").orderBy("points", "desc").limit(10).onSnapshot((snapshot) => {
+        const top = [];
+        snapshot.forEach(doc => top.push({ name: doc.data().name || "Anonymous", points: doc.data().points || 0 }));
+        setLeaderboard(top);
+      });
+      return unsubscribe;
+    }, []);
+
+    React.useEffect(() => {
+      const unsubscribe = colRef("comments").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
+        const comms = [];
+        snapshot.forEach(doc => comms.push({ id: doc.id, ...doc.data() }));
+        setComments(comms);
+      });
+      return unsubscribe;
+    }, []);
+
+    const triggerCelebration = () => {
+      canvasConfetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+      setCelebration(true);
+      setTimeout(() => setCelebration(false), 3000);
+    };
+
+    const handleSignup = async (e) => {
+      e.preventDefault();
+      if (!user?.uid) return;
+      if (!signupName.trim() || !signupEmail.trim()) { setSignupMsg("Name and email required"); return; }
+      const existing = await colRef("users").where("email", "==", signupEmail.trim()).get();
+      if (!existing.empty) { setSignupMsg("Email already registered"); return; }
+      const urlParams = new URLSearchParams(window.location.search);
+      const referrerId = urlParams.get("ref");
+      try {
+        await db.runTransaction(async (transaction) => {
+          const userRef = docRef("users", user.uid);
+          const globalRef = docRef("global", "stats");
+          const globalSnap = await transaction.get(globalRef);
+          let referrerSnap = null;
+          if (referrerId && referrerId !== user.uid) {
+            const referrerRef = docRef("users", referrerId);
+            referrerSnap = await transaction.get(referrerRef);
+          }
+          const currentUsers = globalSnap.exists ? globalSnap.data().totalUsers : 0;
+          const initPoints = 50;
+          const initTrees = Math.floor(initPoints / 10);
+          transaction.set(userRef, {
+            uid: user.uid,
+            name: signupName.trim(),
+            email: signupEmail.trim(),
+            points: initPoints,
+            trees: initTrees,
+            referrals: 0,
+            tapPointsUsedToday: 0,
+            lastTapDate: "",
+            lastCheckinDate: "",
+            checkinStreak: 0,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          transaction.set(globalRef, {
+            totalUsers: currentUsers + 1,
+            totalTrees: (globalSnap.exists ? globalSnap.data().totalTrees : 0) + initTrees,
+            queuePosition: (globalSnap.exists ? globalSnap.data().queuePosition || 0 : 0) + 1
+          });
+          if (referrerSnap && referrerSnap.exists) {
+            const oldPoints = referrerSnap.data().points || 0;
+            const oldTrees = referrerSnap.data().trees || 0;
+            const newPoints = oldPoints + 100;
+            const newTrees = Math.floor(newPoints / 10);
+            const referrerRef = docRef("users", referrerId);
+            transaction.update(referrerRef, { points: newPoints, trees: newTrees, referrals: (referrerSnap.data().referrals || 0) + 1 });
+            const globalTreeRef = docRef("global", "stats");
+            const globalTreeSnap = await transaction.get(globalTreeRef);
+            const currentGlobalTrees = globalTreeSnap.exists ? globalTreeSnap.data().totalTrees : 0;
+            transaction.update(globalTreeRef, { totalTrees: currentGlobalTrees + (newTrees - oldTrees) });
+          }
+        });
+        const updatedSnap = await docRef("users", user.uid).get();
+        if (updatedSnap.exists) setUser({ uid: user.uid, ...updatedSnap.data() });
+        triggerCelebration();
+        setSignupMsg("✅ Welcome! 50 points (5 trees) added. Your referral link is ready!");
+        setSignupName(""); setSignupEmail("");
+      } catch (err) { setSignupMsg("Error: " + err.message); }
+    };
+
+    const addComment = async (parentId = null, replyName = null, replyText = null) => {
+      const name = (parentId ? replyName : newCommentName.trim()) || (user?.name || "Anonymous");
+      const text = parentId ? replyText : newCommentText.trim();
+      if (!text) return;
+      await colRef("comments").add({
+        name: escapeHtml(name), text: escapeHtml(text), parentId, userId: user?.uid || null, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      if (!parentId) { setNewCommentText(""); setNewCommentName(""); }
+    };
+
+    const editComment = async (id, newText) => {
+      await docRef("comments", id).update({ text: escapeHtml(newText) });
+    };
+    const deleteComment = async (id) => {
+      if (!confirm("Delete comment and all replies?")) return;
+      const batch = db.batch();
+      const replies = await colRef("comments").where("parentId", "==", id).get();
+      replies.forEach(d => batch.delete(d.ref));
+      batch.delete(docRef("comments", id));
+      await batch.commit();
+    };
+
+    const copyReferralLink = () => {
+      if (!user?.uid) return;
+      navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?ref=${user.uid}`);
+      alert("Referral link copied! Earn 100 points per friend.");
+    };
+
+    const handleDailyCheckin = async () => {
+      if (!user?.uid) return;
+      const today = new Date().toDateString();
+      const lastCheckin = user.lastCheckinDate || "";
+      if (lastCheckin === today) { setDailyMsg("Already checked in today!"); return; }
+      let streak = (lastCheckin === new Date(Date.now() - 86400000).toDateString()) ? (user.checkinStreak || 0) + 1 : 1;
+      const bonus = Math.min(100, 10 + Math.floor(streak / 5) * 5);
+      try {
+        const userRef = docRef("users", user.uid);
+        await userRef.update({
+          points: firebase.firestore.FieldValue.increment(bonus),
+          trees: firebase.firestore.FieldValue.increment(Math.floor((user.points + bonus) / 10) - Math.floor(user.points / 10)),
+          lastCheckinDate: today,
+          checkinStreak: streak
+        });
+        const updated = await userRef.get();
+        if (updated.exists) setUser({ uid: user.uid, ...updated.data() });
+        setDailyMsg(`✅ +${bonus} points! Streak: ${streak} days`);
+        triggerCelebration();
+      } catch (err) { setDailyMsg("Error, try again."); }
+    };
+
+    const handleTapGame = async () => {
+      if (!user?.uid) return;
+      const today = new Date().toDateString();
+      const used = user.tapPointsUsedToday || 0;
+      if (used >= 50) { alert("You've collected all 50 tap points for today! Come back tomorrow."); return; }
+      const gain = 1;
+      try {
+        const userRef = docRef("users", user.uid);
+        await userRef.update({
+          points: firebase.firestore.FieldValue.increment(gain),
+          trees: firebase.firestore.FieldValue.increment(Math.floor((user.points + gain) / 10) - Math.floor(user.points / 10)),
+          tapPointsUsedToday: used + gain,
+          lastTapDate: today
+        });
+        const updated = await userRef.get();
+        if (updated.exists) setUser({ uid: user.uid, ...updated.data() });
+        setTapPointsLeft(50 - (used + gain));
+      } catch (err) { console.error(err); }
+    };
+
+    const handleAgeFind = () => {
+      const age = parseInt(ageInput);
+      if (isNaN(age)) { alert("Enter a valid age"); return; }
+      const stage = biologicalStages.find(s => age >= s.ageMin && age <= s.ageMax);
+      if (stage) setActiveStageModal(stage);
+      else alert("Age out of range (0–120)");
+    };
+
+    const topLevelComments = comments.filter(c => !c.parentId);
+    const repliesMap = {};
+    comments.forEach(c => { if (c.parentId) { repliesMap[c.parentId] = repliesMap[c.parentId] || []; repliesMap[c.parentId].push(c); } });
+
+    const isRegistered = user && user.name && user.email;
+    if (loading) return React.createElement("div", { className: "flex justify-center items-center min-h-screen text-2xl" }, "🌱 Loading...");
+
+    return React.createElement("div", { className: "container mx-auto px-3 py-6 max-w-5xl" },
+      celebration && React.createElement("div", { className: "modal-overlay", onClick: () => setCelebration(false) },
+        React.createElement("div", { className: "modal-card text-center", onClick: e => e.stopPropagation() },
+          React.createElement("div", { className: "text-5xl mb-2" }, "🎉"),
+          React.createElement("h2", { className: "text-2xl font-bold text-[#caa33b]" }, "You rock!"),
+          React.createElement("p", { className: "mt-2" }, "+50 points, +5 real trees planted!"),
+          React.createElement("button", { onClick: () => setCelebration(false), className: "mt-4 bg-[#caa33b] px-4 py-1 rounded-full text-black font-bold" }, "Continue")
+        )
+      ),
+      activeStageModal && React.createElement("div", { className: "modal-overlay", onClick: () => setActiveStageModal(null) },
+        React.createElement("div", { className: "modal-card", onClick: e => e.stopPropagation() },
+          React.createElement("h2", { className: "text-2xl font-bold text-[#caa33b] mb-2" }, activeStageModal.name),
+          React.createElement("p", { className: "text-sm text-white/80" }, React.createElement("strong", {}, "Ages: "), activeStageModal.ageMin, "–", activeStageModal.ageMax, " years"),
+          React.createElement("p", { className: "text-sm text-white/80" }, React.createElement("strong", {}, "Vote weight: "), activeStageModal.vote),
+          React.createElement("p", { className: "text-base mt-3 leading-relaxed" }, activeStageModal.desc),
+          React.createElement("button", { className: "mt-4 bg-[#caa33b] px-4 py-1 rounded-full text-black font-bold", onClick: () => setActiveStageModal(null) }, "Close")
+        )
+      ),
+      React.createElement("div", { className: "glass-card p-5 md:p-8" },
+        React.createElement("div", { className: "flex items-center gap-3 mb-6" },
+          React.createElement("div", { className: "text-4xl" }, "🌳"),
+          React.createElement("div", {},
+            React.createElement("h1", { className: "text-2xl md:text-3xl font-bold" }, "Gadaa Roots"),
+            React.createElement("p", { className: "text-sm text-[#caa33b]" }, "Plant the future · Restore the system · From bans to forests")
+          )
+        ),
+        React.createElement("div", { className: "text-center mb-6" },
+          React.createElement("div", { className: "inline-block bg-[#caa33b]/20 border border-[#caa33b] rounded-full px-6 py-3 text-lg font-bold text-[#caa33b] backdrop-blur-sm" }, "🔥 They deleted creators. We're planting forests. Join Gadaa Roots waiting list. 🔥")
+        ),
+        React.createElement("div", { className: "text-center mb-8" },
+          React.createElement("h2", { className: "text-3xl md:text-4xl font-extrabold text-[#caa33b]" }, "Creators lost platforms. We're building forests instead."),
+          React.createElement("p", { className: "text-lg text-white/80 max-w-lg mx-auto" }, "Every signup plants 5 real trees in Oromia. No spam, no fees.")
+        ),
+        React.createElement("div", { className: "flex flex-wrap justify-center gap-4 mb-8" },
+          React.createElement("div", { className: "bg-black/40 rounded-2xl p-4 text-center min-w-[110px]" }, React.createElement("div", { className: "text-3xl font-bold text-[#caa33b]" }, globalStats.totalUsers), React.createElement("div", { className: "text-xs" }, "People waiting")),
+          React.createElement("div", { className: "bg-black/40 rounded-2xl p-4 text-center min-w-[110px]" }, React.createElement("div", { className: "text-3xl font-bold text-[#caa33b]" }, globalStats.totalTrees), React.createElement("div", { className: "text-xs" }, "Trees planted")),
+          React.createElement("div", { className: "bg-black/40 rounded-2xl p-4 text-center min-w-[110px]" }, React.createElement("div", { className: "text-3xl font-bold text-[#caa33b]" }, isRegistered ? Math.max(0, Math.floor((user.points||0)/10) - (user.trees||0)) : 0), React.createElement("div", { className: "text-xs" }, "Pending batch")),
+          React.createElement("div", { className: "bg-black/40 rounded-2xl p-4 text-center min-w-[140px]" }, React.createElement("div", { className: "text-3xl font-bold text-[#caa33b]" }, "#", globalStats.queuePosition || 0), React.createElement("div", { className: "text-xs" }, "Your queue position"))
+        ),
+        !isRegistered ?
+          React.createElement("div", { className: "max-w-md mx-auto mb-8 bg-black/30 p-5 rounded-2xl" },
+            React.createElement("form", { onSubmit: handleSignup, className: "space-y-4" },
+              React.createElement("input", { type: "text", placeholder: "Your full name", value: signupName, onChange: e => setSignupName(e.target.value), className: "w-full bg-black/60 rounded-full px-5 py-3 text-white text-base border border-white/20", required: true }),
+              React.createElement("input", { type: "email", placeholder: "Email address", value: signupEmail, onChange: e => setSignupEmail(e.target.value), className: "w-full bg-black/60 rounded-full px-5 py-3 text-white text-base border border-white/20", required: true }),
+              React.createElement("button", { type: "submit", className: "w-full btn-gold rounded-full py-3 font-bold text-black text-lg" }, "🌱 Join waiting list → 50 points (5 trees)"),
+              signupMsg && React.createElement("p", { className: "text-center text-green-400 text-sm" }, signupMsg)
+            )
+          ) :
+          React.createElement("div", { className: "space-y-5 mb-8" },
+            React.createElement("div", { className: "bg-black/40 rounded-2xl p-5" },
+              React.createElement("div", { className: "flex justify-between" }, React.createElement("span", { className: "font-bold text-lg" }, "🌿 Your points & trees"), React.createElement("span", { className: "text-xl text-[#caa33b]" }, user.points, " pts")),
+              React.createElement("div", { className: "w-full bg-[#2e4a3a] h-3 rounded-full mt-2" }, React.createElement("div", { className: "bg-[#caa33b] h-3 rounded-full", style: { width: `${Math.min(100, user.points / 100 * 2)}%` } })),
+              React.createElement("p", { className: "text-md mt-3" }, "10 points = 1 real tree. You have ", React.createElement("strong", {}, user.trees), " trees planted."),
+              React.createElement("hr", { className: "my-4 opacity-30" }),
+              React.createElement("div", { className: "flex justify-between items-center flex-wrap gap-2" }, React.createElement("span", { className: "font-bold" }, "🔗 Your referral link"), React.createElement("button", { onClick: copyReferralLink, className: "border border-[#caa33b] px-4 py-1 rounded-full text-sm" }, "📋 Copy")),
+              React.createElement("div", { className: "text-xs bg-black/50 p-2 rounded-xl break-all mt-1" }, window.location.origin, window.location.pathname, "?ref=", user.uid),
+              React.createElement("p", { className: "text-sm mt-2" }, "Referrals: ", user.referrals, " | Bonus: ", user.referrals*100, " pts")
+            ),
+            React.createElement("div", { className: "bg-black/40 rounded-2xl p-5" },
+              React.createElement("div", { className: "flex justify-between" }, React.createElement("span", { className: "font-bold text-lg" }, "🏛️ Your Gadaa rank"), React.createElement("span", { className: "text-[#caa33b]" }, getRank(user.points).name)),
+              React.createElement("p", { className: "text-md" }, "Vote weight: ", React.createElement("strong", {}, getRank(user.points).weight), " – ", getRank(user.points).desc)
+            ),
+            React.createElement("div", { className: "bg-black/40 rounded-2xl p-5 flex flex-col gap-3" },
+              React.createElement("div", { className: "flex justify-between items-center" },
+                React.createElement("span", { className: "font-bold" }, "📅 Daily check‑in"),
+                React.createElement("button", { onClick: handleDailyCheckin, className: "bg-[#caa33b] px-4 py-1 rounded-full text-sm font-bold text-black" }, "Claim")
+              ),
+              dailyMsg && React.createElement("p", { className: "text-xs text-green-400" }, dailyMsg),
+              React.createElement("div", { className: "flex justify-between items-center mt-2" },
+                React.createElement("span", { className: "font-bold" }, "🎮 Tap the sprout (", tapPointsLeft, "/50 points left today)"),
+                React.createElement("div", { className: "sprout", onClick: handleTapGame }, "🌱")
+              )
+              // The "Share to jump spots" button has been REMOVED to prevent unfair point abuse.
+            ),
+            React.createElement("div", { className: "bg-black/40 rounded-2xl p-5" },
+              React.createElement("div", { className: "font-bold text-lg mb-2" }, "🏆 Top Planters Leaderboard"),
+              React.createElement("div", { className: "space-y-1 text-sm" },
+                leaderboard.map((p, idx) => React.createElement("div", { key: idx, className: "flex justify-between border-b border-white/10 py-1" }, React.createElement("span", {}, idx+1, ". ", p.name), React.createElement("span", { className: "text-[#caa33b]" }, p.points, " pts")))
+              ),
+              leaderboard.length === 0 && React.createElement("p", { className: "text-xs text-white/50" }, "Be the first to appear!")
+            )
+          ),
+        React.createElement("div", { className: "bg-black/40 rounded-2xl p-5 mb-8" },
+          React.createElement("div", { className: "font-bold text-lg mb-2" }, "🌱 How it works – real trees, verifiable"),
+          React.createElement("ul", { className: "text-base list-disc pl-5 space-y-1 text-white/90" },
+            React.createElement("li", {}, "10 points = 1 real tree (acacia, juniper, or moringa)."),
+            React.createElement("li", {}, "Every 500 points triggers a planting batch."),
+            React.createElement("li", {}, "Local teams plant, GPS tag, and take photos."),
+            React.createElement("li", {}, "Batch ID stored, you will see your tree's location and image."),
+            React.createElement("li", {}, "2‑year survival guarantee, carbon credits fund the community.")
+          ),
+          React.createElement("p", { className: "text-sm mt-3 bg-[#2e4a3a] p-2 rounded-xl" }, "✅ Proof: PDF certificate + public map (coming Q3 2026).")
+        ),
+        React.createElement("div", { className: "bg-black/40 rounded-2xl p-5 mb-8" },
+          React.createElement("div", { className: "font-bold text-lg mb-3" }, "💬 Community stories"),
+          React.createElement("div", { className: "space-y-3 max-h-96 overflow-y-auto pr-1" },
+            topLevelComments.length === 0 && React.createElement("p", { className: "text-center text-white/50 text-sm" }, "Be the first to share your hope."),
+            topLevelComments.map(c => React.createElement(CommentItem, {
+              key: c.id, comment: c, replies: repliesMap[c.id] || [], userId: user?.uid,
+              onEdit: editComment, onDelete: deleteComment, onReply: addComment
+            }))
+          ),
+          React.createElement("div", { className: "mt-4 flex flex-col gap-2" },
+            React.createElement("input", { type: "text", placeholder: "Your name", value: newCommentName, onChange: e => setNewCommentName(e.target.value), className: "bg-black/50 rounded-full px-4 py-2 text-sm" }),
+            React.createElement("textarea", { placeholder: "Share your story...", rows: "2", value: newCommentText, onChange: e => setNewCommentText(e.target.value), className: "bg-black/50 rounded-xl px-4 py-2 text-sm" }),
+            React.createElement("button", { onClick: () => addComment(), className: "bg-[#caa33b] px-4 py-2 rounded-full text-sm font-bold" }, "Post comment")
+          )
+        ),
+        React.createElement("div", { className: "flex flex-wrap justify-center gap-4 mb-6" },
+          React.createElement("a", { href: "https://t.me/gadaaecobuilderbot", target: "_blank", className: "text-[#caa33b] hover:underline" }, React.createElement("i", { className: "fab fa-telegram-plane" }), " Telegram Bot"),
+          React.createElement("a", { href: "https://t.me/gadaaeEobuilder", target: "_blank", className: "text-[#caa33b] hover:underline" }, React.createElement("i", { className: "fab fa-telegram" }), " Telegram Group"),
+          React.createElement("a", { href: "https://x.com/tatemindset49", target: "_blank", className: "text-[#caa33b] hover:underline" }, React.createElement("i", { className: "fab fa-twitter" }), " Twitter"),
+          React.createElement("a", { href: "https://www.linkedin.com/in/israel-tolessa-5t", target: "_blank", className: "text-[#caa33b] hover:underline" }, React.createElement("i", { className: "fab fa-linkedin-in" }), " LinkedIn")
+        ),
+        React.createElement("div", { className: "bg-black/40 rounded-2xl p-5 mb-6 text-center" },
+          React.createElement("div", { className: "font-bold text-lg mb-2" }, "🇪🇹 Support the Mission – Ethiopia & Global"),
+          React.createElement("p", { className: "text-sm text-white/80 mb-3" }, "Choose your preferred method: Telebirr (Ethiopia) or Polygon (MetaMask). Every contribution plants real trees."),
+          React.createElement("div", { className: "bg-black/30 rounded-xl p-3 mb-3" },
+            React.createElement("div", { className: "font-bold text-[#caa33b]" }, "✅ Telebirr (Ethiopia)"),
+            React.createElement("div", { className: "flex flex-wrap items-center justify-center gap-2 mt-2" },
+              React.createElement("code", { className: "text-sm break-all bg-black/50 p-2 rounded" }, "+251*******583"),
+              React.createElement("button", { onClick: () => { navigator.clipboard.writeText("+251936919583"); alert("Telebirr number copied!"); }, className: "bg-[#caa33b] text-black text-xs px-3 py-1 rounded-full font-bold" }, "📋 Copy")
+            ),
+            React.createElement("p", { className: "text-xs text-white/60 mt-1" }, "Open Telebirr → Send Money → Enter this number → Confirm.")
+          ),
+          React.createElement("div", { className: "bg-black/30 rounded-xl p-3" },
+            React.createElement("div", { className: "font-bold text-[#caa33b]" }, "🦊 Polygon (MetaMask / Ethereum compatible)"),
+            React.createElement("div", { className: "flex flex-wrap items-center justify-center gap-2 mt-2" },
+              React.createElement("code", { className: "text-sm break-all bg-black/50 p-2 rounded" }, "0x4Ab3...E4272"),
+              React.createElement("button", { onClick: () => { navigator.clipboard.writeText("0x4Ab315Ba281FA31c6bDdcFCa204db2DA122E4272"); alert("Polygon address copied!"); }, className: "bg-[#caa33b] text-black text-xs px-3 py-1 rounded-full font-bold" }, "📋 Copy")
+            ),
+            React.createElement("p", { className: "text-xs text-white/60 mt-1" }, "Send MATIC, ETH, USDC (Polygon network). Funds go to reforestation.")
+          ),
+          React.createElement("p", { className: "text-[10px] text-white/40 mt-3" }, "🌱 All donations fund community reforestation in Oromia. Thank you for your support!")
+        ),
+        React.createElement("div", { className: "bg-black/20 rounded-xl p-3 text-center mt-6" },
+          React.createElement("div", { className: "font-bold text-sm" }, "📺 While you wait – creator-friendly platforms"),
+          React.createElement("div", { className: "text-xs space-x-2 mt-1" },
+            React.createElement("a", { href: "#", className: "text-[#caa33b] hover:underline" }, "Rumble"), " | ",
+            React.createElement("a", { href: "#", className: "text-[#caa33b] hover:underline" }, " Odysee"), " | ",
+            React.createElement("a", { href: "#", className: "text-[#caa33b] hover:underline" }, " DLive"), " | ",
+            React.createElement("a", { href: "#", className: "text-[#caa33b] hover:underline" }, " PeerTube")
+          ),
+          React.createElement("p", { className: "text-[10px] text-white/30 mt-1" }, "(Update with your own channel links)")
+        ),
+        React.createElement("div", { className: "mt-6" },
+          React.createElement("div", { className: "text-center font-bold text-lg mb-3" }, "📜 Your age‑based Gadaa stage (click any stage for details)"),
+          React.createElement("div", { className: "flex flex-wrap justify-center gap-2 mb-4" },
+            React.createElement("input", { type: "number", placeholder: "Enter your age", className: "bg-black/50 px-4 py-2 rounded-full w-32 text-center", value: ageInput, onChange: e => setAgeInput(e.target.value) }),
+            React.createElement("button", { onClick: handleAgeFind, className: "bg-[#caa33b] px-5 py-2 rounded-full text-black font-bold" }, "Find my stage")
+          ),
+          React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" },
+            biologicalStages.map(s => React.createElement("div", { key: s.name, className: "bg-black/50 rounded-xl p-3 text-center cursor-pointer hover:bg-black/70 transition border border-[#caa33b]/40", onClick: () => setActiveStageModal(s) },
+              React.createElement("div", { className: "font-bold text-md" }, s.name),
+              React.createElement("div", { className: "text-xs" }, "Age ", s.ageMin, "–", s.ageMax),
+              React.createElement("div", { className: "text-[#caa33b] text-xs" }, "Vote ", s.vote)
+            ))
+          ),
+          React.createElement("p", { className: "text-xs text-white/50 text-center mt-3" }, "👆 Tap any stage to see full description and roles.")
+        ),
+        React.createElement("footer", { className: "text-center text-[11px] text-white/30 mt-8" }, "© 2026 Gadaa Roots – Addis Ababa, Ethiopia · Every tree is real, verifiable, permanent.")
+      )
+    );
+  };
+
+  ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+</script>
+</body>
+</html>
