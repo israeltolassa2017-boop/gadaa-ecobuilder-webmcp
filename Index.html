@@ -46,7 +46,7 @@
 
   const getRank = (points) => {
     if (points >= 10000) return { name: "Yuuba (Elder)", weight: "15x", desc: "Wisdom keeper, final authority." };
-    if (points >= 5000) return { name: "Gadaa (Ruler)", weight: "10x", desc: "8‑year leader, sets policies." };
+    if (points >= 5000) return { name: "Gadaa (Ruler)", weight: "10x", desc: "8-year leader, sets policies." };
     if (points >= 2000) return { name: "Raaba (Mentor)", weight: "8x", desc: "Teaches younger grades." };
     if (points >= 1000) return { name: "Kuusa (Leader)", weight: "5x", desc: "Senior warrior, manages projects." };
     if (points >= 500) return { name: "Qondaala (Guardian)", weight: "3x", desc: "Defender, protects the land." };
@@ -55,13 +55,13 @@
   };
 
   const biologicalStages = [
-    { name: "Dabballee", ageMin: 0, ageMax: 8, vote: "1x", desc: "Childhood – no voting rights, but protected and taught." },
-    { name: "Follee", ageMin: 9, ageMax: 16, vote: "2x", desc: "Youth – early responsibilities, can participate in planting." },
-    { name: "Qondaala", ageMin: 17, ageMax: 24, vote: "3x", desc: "Warrior – defends the community, leads restoration work." },
-    { name: "Kuusa", ageMin: 25, ageMax: 32, vote: "5x", desc: "Senior warrior – organises group efforts." },
-    { name: "Raaba", ageMin: 33, ageMax: 40, vote: "8x", desc: "Mentor – teaches Gadaa law, resolves disputes." },
-    { name: "Gadaa", ageMin: 41, ageMax: 48, vote: "10x", desc: "Ruling class – holds executive power for 8 years." },
-    { name: "Yuuba", ageMin: 49, ageMax: 120, vote: "15x", desc: "Elder – final council, advises and can veto decisions." }
+    { name: "Dabballee", ageMin: 0, ageMax: 8, vote: "1x", desc: "Childhood - no voting rights, but protected and taught." },
+    { name: "Follee", ageMin: 9, ageMax: 16, vote: "2x", desc: "Youth - early responsibilities, can participate in planting." },
+    { name: "Qondaala", ageMin: 17, ageMax: 24, vote: "3x", desc: "Warrior - defends the community, leads restoration work." },
+    { name: "Kuusa", ageMin: 25, ageMax: 32, vote: "5x", desc: "Senior warrior - organises group efforts." },
+    { name: "Raaba", ageMin: 33, ageMax: 40, vote: "8x", desc: "Mentor - teaches Gadaa law, resolves disputes." },
+    { name: "Gadaa", ageMin: 41, ageMax: 48, vote: "10x", desc: "Ruling class - holds executive power for 8 years." },
+    { name: "Yuuba", ageMin: 49, ageMax: 120, vote: "15x", desc: "Elder - final council, advises and can veto decisions." }
   ];
 
   const escapeHtml = (s) => s?.replace(/[&<>]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[m])) || "";
@@ -94,9 +94,9 @@
         : React.createElement("div", { className: "text-sm mt-1 break-words text-white/90" }, comment.text),
       React.createElement("div", { className: "flex gap-3 text-xs text-white/60 mt-1 flex-wrap" },
         React.createElement("span", {}, comment.timestamp?.toDate?.().toLocaleString() || "Just now"),
-        React.createElement("button", { className: "text-[#caa33b]", onClick: () => setReplyVisible(!replyVisible) }, "💬 Reply"),
-        isOwner && !editMode && React.createElement("button", { className: "text-[#caa33b]", onClick: () => setEditMode(true) }, "✏️ Edit"),
-        isOwner && React.createElement("button", { className: "text-red-400", onClick: () => onDelete(comment.id) }, "🗑️ Delete")
+        React.createElement("button", { className: "text-[#caa33b]", onClick: () => setReplyVisible(!replyVisible) }, "Reply"),
+        isOwner && !editMode && React.createElement("button", { className: "text-[#caa33b]", onClick: () => setEditMode(true) }, "Edit"),
+        isOwner && React.createElement("button", { className: "text-red-400", onClick: () => onDelete(comment.id) }, "Delete")
       ),
       replyVisible && React.createElement("div", { className: "ml-4 mt-2" },
         React.createElement("input", { type: "text", placeholder: "Your name", className: "w-full p-1 mb-1 rounded bg-black/50 text-white text-sm", value: replyName, onChange: e => setReplyName(e.target.value) }),
@@ -246,7 +246,7 @@
         const updatedSnap = await docRef("users", user.uid).get();
         if (updatedSnap.exists) setUser({ uid: user.uid, ...updatedSnap.data() });
         triggerCelebration();
-        setSignupMsg("✅ Welcome! 50 points (5 trees) added. Your referral link is ready!");
+        setSignupMsg("Welcome! 50 points (5 trees) added. Your referral link is ready!");
         setSignupName(""); setSignupEmail("");
       } catch (err) { setSignupMsg("Error: " + err.message); }
     };
@@ -296,7 +296,7 @@
         });
         const updated = await userRef.get();
         if (updated.exists) setUser({ uid: user.uid, ...updated.data() });
-        setDailyMsg(`✅ +${bonus} points! Streak: ${streak} days`);
+        setDailyMsg(`+${bonus} points! Streak: ${streak} days`);
         triggerCelebration();
       } catch (err) { setDailyMsg("Error, try again."); }
     };
@@ -326,7 +326,7 @@
       if (isNaN(age)) { alert("Enter a valid age"); return; }
       const stage = biologicalStages.find(s => age >= s.ageMin && age <= s.ageMax);
       if (stage) setActiveStageModal(stage);
-      else alert("Age out of range (0–120)");
+      else alert("Age out of range (0-120)");
     };
 
     const topLevelComments = comments.filter(c => !c.parentId);
@@ -334,7 +334,7 @@
     comments.forEach(c => { if (c.parentId) { repliesMap[c.parentId] = repliesMap[c.parentId] || []; repliesMap[c.parentId].push(c); } });
 
     const isRegistered = user && user.name && user.email;
-    if (loading) return React.createElement("div", { className: "flex justify-center items-center min-h-screen text-2xl" }, "🌱 Loading...");
+    if (loading) return React.createElement("div", { className: "flex justify-center items-center min-h-screen text-2xl" }, "Loading...");
 
     return React.createElement("div", { className: "container mx-auto px-3 py-6 max-w-5xl" },
       celebration && React.createElement("div", { className: "modal-overlay", onClick: () => setCelebration(false) },
@@ -348,7 +348,7 @@
       activeStageModal && React.createElement("div", { className: "modal-overlay", onClick: () => setActiveStageModal(null) },
         React.createElement("div", { className: "modal-card", onClick: e => e.stopPropagation() },
           React.createElement("h2", { className: "text-2xl font-bold text-[#caa33b] mb-2" }, activeStageModal.name),
-          React.createElement("p", { className: "text-sm text-white/80" }, React.createElement("strong", {}, "Ages: "), activeStageModal.ageMin, "–", activeStageModal.ageMax, " years"),
+          React.createElement("p", { className: "text-sm text-white/80" }, React.createElement("strong", {}, "Ages: "), activeStageModal.ageMin, "-", activeStageModal.ageMax, " years"),
           React.createElement("p", { className: "text-sm text-white/80" }, React.createElement("strong", {}, "Vote weight: "), activeStageModal.vote),
           React.createElement("p", { className: "text-base mt-3 leading-relaxed" }, activeStageModal.desc),
           React.createElement("button", { className: "mt-4 bg-[#caa33b] px-4 py-1 rounded-full text-black font-bold", onClick: () => setActiveStageModal(null) }, "Close")
@@ -380,38 +380,37 @@
             React.createElement("form", { onSubmit: handleSignup, className: "space-y-4" },
               React.createElement("input", { type: "text", placeholder: "Your full name", value: signupName, onChange: e => setSignupName(e.target.value), className: "w-full bg-black/60 rounded-full px-5 py-3 text-white text-base border border-white/20", required: true }),
               React.createElement("input", { type: "email", placeholder: "Email address", value: signupEmail, onChange: e => setSignupEmail(e.target.value), className: "w-full bg-black/60 rounded-full px-5 py-3 text-white text-base border border-white/20", required: true }),
-              React.createElement("button", { type: "submit", className: "w-full btn-gold rounded-full py-3 font-bold text-black text-lg" }, "🌱 Join waiting list → 50 points (5 trees)"),
+              React.createElement("button", { type: "submit", className: "w-full btn-gold rounded-full py-3 font-bold text-black text-lg" }, "Join waiting list -> 50 points (5 trees)"),
               signupMsg && React.createElement("p", { className: "text-center text-green-400 text-sm" }, signupMsg)
             )
           ) :
           React.createElement("div", { className: "space-y-5 mb-8" },
             React.createElement("div", { className: "bg-black/40 rounded-2xl p-5" },
-              React.createElement("div", { className: "flex justify-between" }, React.createElement("span", { className: "font-bold text-lg" }, "🌿 Your points & trees"), React.createElement("span", { className: "text-xl text-[#caa33b]" }, user.points, " pts")),
+              React.createElement("div", { className: "flex justify-between" }, React.createElement("span", { className: "font-bold text-lg" }, "Your points & trees"), React.createElement("span", { className: "text-xl text-[#caa33b]" }, user.points, " pts")),
               React.createElement("div", { className: "w-full bg-[#2e4a3a] h-3 rounded-full mt-2" }, React.createElement("div", { className: "bg-[#caa33b] h-3 rounded-full", style: { width: `${Math.min(100, user.points / 100 * 2)}%` } })),
               React.createElement("p", { className: "text-md mt-3" }, "10 points = 1 real tree. You have ", React.createElement("strong", {}, user.trees), " trees planted."),
               React.createElement("hr", { className: "my-4 opacity-30" }),
-              React.createElement("div", { className: "flex justify-between items-center flex-wrap gap-2" }, React.createElement("span", { className: "font-bold" }, "🔗 Your referral link"), React.createElement("button", { onClick: copyReferralLink, className: "border border-[#caa33b] px-4 py-1 rounded-full text-sm" }, "📋 Copy")),
+              React.createElement("div", { className: "flex justify-between items-center flex-wrap gap-2" }, React.createElement("span", { className: "font-bold" }, "Your referral link"), React.createElement("button", { onClick: copyReferralLink, className: "border border-[#caa33b] px-4 py-1 rounded-full text-sm" }, "Copy")),
               React.createElement("div", { className: "text-xs bg-black/50 p-2 rounded-xl break-all mt-1" }, window.location.origin, window.location.pathname, "?ref=", user.uid),
               React.createElement("p", { className: "text-sm mt-2" }, "Referrals: ", user.referrals, " | Bonus: ", user.referrals*100, " pts")
             ),
             React.createElement("div", { className: "bg-black/40 rounded-2xl p-5" },
-              React.createElement("div", { className: "flex justify-between" }, React.createElement("span", { className: "font-bold text-lg" }, "🏛️ Your Gadaa rank"), React.createElement("span", { className: "text-[#caa33b]" }, getRank(user.points).name)),
-              React.createElement("p", { className: "text-md" }, "Vote weight: ", React.createElement("strong", {}, getRank(user.points).weight), " – ", getRank(user.points).desc)
+              React.createElement("div", { className: "flex justify-between" }, React.createElement("span", { className: "font-bold text-lg" }, "Your Gadaa rank"), React.createElement("span", { className: "text-[#caa33b]" }, getRank(user.points).name)),
+              React.createElement("p", { className: "text-md" }, "Vote weight: ", React.createElement("strong", {}, getRank(user.points).weight), " - ", getRank(user.points).desc)
             ),
             React.createElement("div", { className: "bg-black/40 rounded-2xl p-5 flex flex-col gap-3" },
               React.createElement("div", { className: "flex justify-between items-center" },
-                React.createElement("span", { className: "font-bold" }, "📅 Daily check‑in"),
+                React.createElement("span", { className: "font-bold" }, "Daily check-in"),
                 React.createElement("button", { onClick: handleDailyCheckin, className: "bg-[#caa33b] px-4 py-1 rounded-full text-sm font-bold text-black" }, "Claim")
               ),
               dailyMsg && React.createElement("p", { className: "text-xs text-green-400" }, dailyMsg),
               React.createElement("div", { className: "flex justify-between items-center mt-2" },
-                React.createElement("span", { className: "font-bold" }, "🎮 Tap the sprout (", tapPointsLeft, "/50 points left today)"),
+                React.createElement("span", { className: "font-bold" }, "Tap the sprout (", tapPointsLeft, "/50 points left today)"),
                 React.createElement("div", { className: "sprout", onClick: handleTapGame }, "🌱")
               )
-              // The "Share to jump spots" button has been REMOVED to prevent unfair point abuse.
             ),
             React.createElement("div", { className: "bg-black/40 rounded-2xl p-5" },
-              React.createElement("div", { className: "font-bold text-lg mb-2" }, "🏆 Top Planters Leaderboard"),
+              React.createElement("div", { className: "font-bold text-lg mb-2" }, "Top Planters Leaderboard"),
               React.createElement("div", { className: "space-y-1 text-sm" },
                 leaderboard.map((p, idx) => React.createElement("div", { key: idx, className: "flex justify-between border-b border-white/10 py-1" }, React.createElement("span", {}, idx+1, ". ", p.name), React.createElement("span", { className: "text-[#caa33b]" }, p.points, " pts")))
               ),
@@ -419,18 +418,18 @@
             )
           ),
         React.createElement("div", { className: "bg-black/40 rounded-2xl p-5 mb-8" },
-          React.createElement("div", { className: "font-bold text-lg mb-2" }, "🌱 How it works – real trees, verifiable"),
+          React.createElement("div", { className: "font-bold text-lg mb-2" }, "How it works - real trees, verifiable"),
           React.createElement("ul", { className: "text-base list-disc pl-5 space-y-1 text-white/90" },
             React.createElement("li", {}, "10 points = 1 real tree (acacia, juniper, or moringa)."),
             React.createElement("li", {}, "Every 500 points triggers a planting batch."),
             React.createElement("li", {}, "Local teams plant, GPS tag, and take photos."),
             React.createElement("li", {}, "Batch ID stored, you will see your tree's location and image."),
-            React.createElement("li", {}, "2‑year survival guarantee, carbon credits fund the community.")
+            React.createElement("li", {}, "2-year survival guarantee, carbon credits fund the community.")
           ),
-          React.createElement("p", { className: "text-sm mt-3 bg-[#2e4a3a] p-2 rounded-xl" }, "✅ Proof: PDF certificate + public map (coming Q3 2026).")
+          React.createElement("p", { className: "text-sm mt-3 bg-[#2e4a3a] p-2 rounded-xl" }, "Proof: PDF certificate + public map (coming Q3 2026).")
         ),
         React.createElement("div", { className: "bg-black/40 rounded-2xl p-5 mb-8" },
-          React.createElement("div", { className: "font-bold text-lg mb-3" }, "💬 Community stories"),
+          React.createElement("div", { className: "font-bold text-lg mb-3" }, "Community stories"),
           React.createElement("div", { className: "space-y-3 max-h-96 overflow-y-auto pr-1" },
             topLevelComments.length === 0 && React.createElement("p", { className: "text-center text-white/50 text-sm" }, "Be the first to share your hope."),
             topLevelComments.map(c => React.createElement(CommentItem, {
@@ -451,28 +450,28 @@
           React.createElement("a", { href: "https://www.linkedin.com/in/israel-tolessa-5t", target: "_blank", className: "text-[#caa33b] hover:underline" }, React.createElement("i", { className: "fab fa-linkedin-in" }), " LinkedIn")
         ),
         React.createElement("div", { className: "bg-black/40 rounded-2xl p-5 mb-6 text-center" },
-          React.createElement("div", { className: "font-bold text-lg mb-2" }, "🇪🇹 Support the Mission – Ethiopia & Global"),
+          React.createElement("div", { className: "font-bold text-lg mb-2" }, "Support the Mission - Ethiopia & Global"),
           React.createElement("p", { className: "text-sm text-white/80 mb-3" }, "Choose your preferred method: Telebirr (Ethiopia) or Polygon (MetaMask). Every contribution plants real trees."),
           React.createElement("div", { className: "bg-black/30 rounded-xl p-3 mb-3" },
-            React.createElement("div", { className: "font-bold text-[#caa33b]" }, "✅ Telebirr (Ethiopia)"),
+            React.createElement("div", { className: "font-bold text-[#caa33b]" }, "Telebirr (Ethiopia)"),
             React.createElement("div", { className: "flex flex-wrap items-center justify-center gap-2 mt-2" },
               React.createElement("code", { className: "text-sm break-all bg-black/50 p-2 rounded" }, "+251*******583"),
-              React.createElement("button", { onClick: () => { navigator.clipboard.writeText("+251936919583"); alert("Telebirr number copied!"); }, className: "bg-[#caa33b] text-black text-xs px-3 py-1 rounded-full font-bold" }, "📋 Copy")
+              React.createElement("button", { onClick: () => { navigator.clipboard.writeText("+251936919583"); alert("Telebirr number copied!"); }, className: "bg-[#caa33b] text-black text-xs px-3 py-1 rounded-full font-bold" }, "Copy")
             ),
-            React.createElement("p", { className: "text-xs text-white/60 mt-1" }, "Open Telebirr → Send Money → Enter this number → Confirm.")
+            React.createElement("p", { className: "text-xs text-white/60 mt-1" }, "Open Telebirr -> Send Money -> Enter this number -> Confirm.")
           ),
           React.createElement("div", { className: "bg-black/30 rounded-xl p-3" },
-            React.createElement("div", { className: "font-bold text-[#caa33b]" }, "🦊 Polygon (MetaMask / Ethereum compatible)"),
+            React.createElement("div", { className: "font-bold text-[#caa33b]" }, "Polygon (MetaMask / Ethereum compatible)"),
             React.createElement("div", { className: "flex flex-wrap items-center justify-center gap-2 mt-2" },
               React.createElement("code", { className: "text-sm break-all bg-black/50 p-2 rounded" }, "0x4Ab3...E4272"),
-              React.createElement("button", { onClick: () => { navigator.clipboard.writeText("0x4Ab315Ba281FA31c6bDdcFCa204db2DA122E4272"); alert("Polygon address copied!"); }, className: "bg-[#caa33b] text-black text-xs px-3 py-1 rounded-full font-bold" }, "📋 Copy")
+              React.createElement("button", { onClick: () => { navigator.clipboard.writeText("0x4Ab315Ba281FA31c6bDdcFCa204db2DA122E4272"); alert("Polygon address copied!"); }, className: "bg-[#caa33b] text-black text-xs px-3 py-1 rounded-full font-bold" }, "Copy")
             ),
             React.createElement("p", { className: "text-xs text-white/60 mt-1" }, "Send MATIC, ETH, USDC (Polygon network). Funds go to reforestation.")
           ),
-          React.createElement("p", { className: "text-[10px] text-white/40 mt-3" }, "🌱 All donations fund community reforestation in Oromia. Thank you for your support!")
+          React.createElement("p", { className: "text-[10px] text-white/40 mt-3" }, "All donations fund community reforestation in Oromia. Thank you for your support!")
         ),
         React.createElement("div", { className: "bg-black/20 rounded-xl p-3 text-center mt-6" },
-          React.createElement("div", { className: "font-bold text-sm" }, "📺 While you wait – creator-friendly platforms"),
+          React.createElement("div", { className: "font-bold text-sm" }, "While you wait - creator-friendly platforms"),
           React.createElement("div", { className: "text-xs space-x-2 mt-1" },
             React.createElement("a", { href: "#", className: "text-[#caa33b] hover:underline" }, "Rumble"), " | ",
             React.createElement("a", { href: "#", className: "text-[#caa33b] hover:underline" }, " Odysee"), " | ",
@@ -482,7 +481,7 @@
           React.createElement("p", { className: "text-[10px] text-white/30 mt-1" }, "(Update with your own channel links)")
         ),
         React.createElement("div", { className: "mt-6" },
-          React.createElement("div", { className: "text-center font-bold text-lg mb-3" }, "📜 Your age‑based Gadaa stage (click any stage for details)"),
+          React.createElement("div", { className: "text-center font-bold text-lg mb-3" }, "Your age-based Gadaa stage (click any stage for details)"),
           React.createElement("div", { className: "flex flex-wrap justify-center gap-2 mb-4" },
             React.createElement("input", { type: "number", placeholder: "Enter your age", className: "bg-black/50 px-4 py-2 rounded-full w-32 text-center", value: ageInput, onChange: e => setAgeInput(e.target.value) }),
             React.createElement("button", { onClick: handleAgeFind, className: "bg-[#caa33b] px-5 py-2 rounded-full text-black font-bold" }, "Find my stage")
@@ -490,18 +489,93 @@
           React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" },
             biologicalStages.map(s => React.createElement("div", { key: s.name, className: "bg-black/50 rounded-xl p-3 text-center cursor-pointer hover:bg-black/70 transition border border-[#caa33b]/40", onClick: () => setActiveStageModal(s) },
               React.createElement("div", { className: "font-bold text-md" }, s.name),
-              React.createElement("div", { className: "text-xs" }, "Age ", s.ageMin, "–", s.ageMax),
+              React.createElement("div", { className: "text-xs" }, "Age ", s.ageMin, "-", s.ageMax),
               React.createElement("div", { className: "text-[#caa33b] text-xs" }, "Vote ", s.vote)
             ))
           ),
-          React.createElement("p", { className: "text-xs text-white/50 text-center mt-3" }, "👆 Tap any stage to see full description and roles.")
+          React.createElement("p", { className: "text-xs text-white/50 text-center mt-3" }, "Tap any stage to see full description and roles.")
         ),
-        React.createElement("footer", { className: "text-center text-[11px] text-white/30 mt-8" }, "© 2026 Gadaa Roots – Addis Ababa, Ethiopia · Every tree is real, verifiable, permanent.")
+        React.createElement("footer", { className: "text-center text-[11px] text-white/30 mt-8" }, "© 2026 Gadaa Roots - Addis Ababa, Ethiopia · Every tree is real, verifiable, permanent.")
       )
     );
   };
 
   ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
 </script>
+
+<!-- ==================== GADAA AI CHAT WIDGET ==================== -->
+<div id="gadaa-ai-chat" style="position: fixed; bottom: 20px; right: 20px; width: 340px; max-width: 90vw; background: #1a2a1f; border: 1px solid #caa33b; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.5); z-index: 9999; font-family: system-ui, sans-serif; display: none;">
+  <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid #caa33b; background: #0a2f1f; border-radius: 16px 16px 0 0;">
+    <div style="color: #caa33b; font-weight: bold; font-size: 14px;">Gadaa AI Assistant</div>
+    <button id="gadaa-close-chat" style="background: none; border: none; color: #caa33b; cursor: pointer; font-size: 18px;">×</button>
+  </div>
+  <div id="gadaa-chat-messages" style="height: 220px; overflow-y: auto; padding: 10px; color: #fff; font-size: 13px; line-height: 1.4;"></div>
+  <div style="padding: 8px; border-top: 1px solid #caa33b;">
+    <input id="gadaa-chat-input" type="text" placeholder="Ask about Gadaa, trees, or restoration..." style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #caa33b; background: #0a2f1f; color: #fff; font-size: 13px; box-sizing: border-box;" />
+    <button id="gadaa-send-chat" style="width: 100%; margin-top: 6px; padding: 8px; background: linear-gradient(135deg, #caa33b, #a07e2c); border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: #000;">Send</button>
+  </div>
+</div>
+
+<!-- Floating open button -->
+<button id="gadaa-open-chat" style="position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #caa33b, #a07e2c); border: none; cursor: pointer; font-size: 24px; box-shadow: 0 4px 15px rgba(202,163,59,0.5); z-index: 9998;">🌳</button>
+
+<script>
+(function() {
+  var chatBox = document.getElementById('gadaa-ai-chat');
+  var openBtn = document.getElementById('gadaa-open-chat');
+  var closeBtn = document.getElementById('gadaa-close-chat');
+  var sendBtn = document.getElementById('gadaa-send-chat');
+  var input = document.getElementById('gadaa-chat-input');
+  var messages = document.getElementById('gadaa-chat-messages');
+
+  openBtn.addEventListener('click', function() {
+    chatBox.style.display = 'block';
+    openBtn.style.display = 'none';
+  });
+
+  closeBtn.addEventListener('click', function() {
+    chatBox.style.display = 'none';
+    openBtn.style.display = 'block';
+  });
+
+  function addMessage(text, isUser) {
+    var div = document.createElement('div');
+    div.style.marginBottom = '8px';
+    div.style.padding = '6px 8px';
+    div.style.borderRadius = '8px';
+    div.style.background = isUser ? '#2e4a3a' : '#0a2f1f';
+    div.style.color = isUser ? '#fff' : '#caa33b';
+    div.innerHTML = '<strong>' + (isUser ? 'You' : 'AI') + ':</strong> ' + text;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  async function sendMessage() {
+    var text = input.value.trim();
+    if (!text) return;
+    addMessage(text, true);
+    input.value = '';
+    addMessage('Thinking...', false);
+
+    try {
+      var res = await fetch('/.netlify/functions/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+      });
+      var data = await res.json();
+      messages.removeChild(messages.lastChild);
+      addMessage(data.reply || 'No response.', false);
+    } catch (err) {
+      messages.removeChild(messages.lastChild);
+      addMessage('Sorry, something went wrong. Please try again.', false);
+    }
+  }
+
+  sendBtn.addEventListener('click', sendMessage);
+  input.addEventListener('keydown', function(e) { if (e.key === 'Enter') sendMessage(); });
+})();
+</script>
+<!-- ==================== END GADAA AI CHAT WIDGET ==================== -->
 </body>
 </html>
